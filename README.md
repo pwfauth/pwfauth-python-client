@@ -9,6 +9,8 @@ interoperate **byte-for-byte**.
 > Sibling projects: the VB.NET and C# examples live in
 > [`pwfauth-vbnet-examples`](https://github.com/pwfauth/pwfauth-vbnet-examples).
 
+![A full run — every endpoint green](docs/demo.png)
+
 ## Install
 
 ```bash

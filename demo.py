@@ -22,7 +22,11 @@ from pwfauth_client import PwfAuthClient, CryptoEnvelope, hwid  # noqa: F401 (Cr
 DEFAULT_APP_SECRET = ""
 DEFAULT_BASE_URL = "https://pwfauth.com"
 
-CYAN, GREEN, RED, DIM, RESET = "\033[36m", "\033[32m", "\033[31m", "\033[90m", "\033[0m"
+# Honour the NO_COLOR convention (https://no-color.org) — set NO_COLOR to disable.
+if os.environ.get("NO_COLOR"):
+    CYAN = GREEN = RED = DIM = RESET = ""
+else:
+    CYAN, GREEN, RED, DIM, RESET = "\033[36m", "\033[32m", "\033[31m", "\033[90m", "\033[0m"
 
 
 def section(title):
