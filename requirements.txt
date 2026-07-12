@@ -1,0 +1,3 @@
+# PWF Auth Python client — only dependency is an AES implementation
+# (the Python standard library has no symmetric cipher).
+pycryptodome>=3.20

@@ -1,0 +1,36 @@
+name: ci
+
+# Syntax check + offline envelope round-trip test on a matrix of Python versions.
+#
+# NOTE: auto-triggers (push / pull_request) are DISABLED for now because the
+# GitHub account's Actions are billing-locked, so every run fails to *start*
+# (not a code error). Re-enable them by uncommenting the two lines below once
+# billing is resolved at https://github.com/settings/billing
+on:
+  workflow_dispatch:   # manual run only: Actions tab -> this workflow -> "Run workflow"
+  # push:
+  # pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Byte-compile
+        run: python -m py_compile pwfauth_client.py demo.py test_envelope.py
+
+      - name: Envelope round-trip test
+        run: python -m unittest -v test_envelope
