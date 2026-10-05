@@ -1,6 +1,7 @@
 name: ci
 
-# Syntax check + offline envelope round-trip test on a matrix of Python versions.
+# Syntax check + offline demo test (a fake server must be refused) on a matrix of
+# Python versions.
 #
 # NOTE: auto-triggers (push / pull_request) are DISABLED for now because the
 # GitHub account's Actions are billing-locked, so every run fails to *start*
@@ -16,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.11", "3.13"]
+        python-version: ["3.9", "3.11", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +31,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Byte-compile
-        run: python -m py_compile pwfauth_client.py demo.py test_envelope.py
+        run: python -m py_compile demo.py test_demo.py
 
-      - name: Envelope round-trip test
-        run: python -m unittest -v test_envelope
+      - name: Offline demo test
+        run: python -m unittest -v test_demo

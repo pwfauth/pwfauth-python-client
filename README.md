@@ -1,95 +1,123 @@
 # pwfauth-python-client
 
-A small, readable **Python** client for the [PWF Auth](https://pwfauth.com) API —
-license keys, end-user auth, and OTA update checks behind one REST API. It
-exercises **every client-facing endpoint** and reproduces the server's
-AES-256-CBC + HMAC-SHA256 envelope, so `login` / `heartbeat` / `logout`
-interoperate **byte-for-byte**.
+A guided **console tour** of the official
+[`pwfauth` Python package](https://pypi.org/project/pwfauth/) (version 1.1.0) for
+[PWF Auth](https://pwfauth.com): license keys, the heartbeat and its kill switch,
+moving a license to a new PC, update checks, trials and user accounts. One
+numbered section per feature, with coloured results.
 
-> Sibling projects: the VB.NET and C# examples live in
-> [`pwfauth-vbnet-examples`](https://github.com/pwfauth/pwfauth-vbnet-examples).
+> Sibling projects:
+> - a Tkinter desktop app: [`pwfauth-python-desktop-sample`](https://github.com/pwfauth/pwfauth-python-desktop-sample)
+> - the package's own source: [`pwfauth-python`](https://github.com/pwfauth/pwfauth-python)
+> - the VB.NET and C# examples: [`pwfauth-vbnet-examples`](https://github.com/pwfauth/pwfauth-vbnet-examples)
 
-![A full run — every endpoint green](docs/demo.png)
+![A full run against a test server](docs/demo.png)
 
 ## Install
 
 ```bash
-pip install -r requirements.txt   # only pycryptodome (the stdlib has no AES)
+pip install -r requirements.txt   # the pwfauth package
 ```
 
-Requires Python 3.8+.
+Requires Python 3.9+.
 
 ## Run the demo
 
 ```bash
 # Linux/macOS
-export PWF_APP_SECRET="your_app_secret"
+export PWFAUTH_SECRET="your_app_secret"
 python demo.py PWF-XXXX-XXXX-XXXX
 
 # Windows
-setx PWF_APP_SECRET "your_app_secret"
+setx PWFAUTH_SECRET "your_app_secret"
 python demo.py PWF-XXXX-XXXX-XXXX
 ```
 
-Run with no argument to be prompted for the key.
+Run with no argument to be prompted for the key. Options:
+
+| Option | What it does |
+| --- | --- |
+| `--move` | Move the license here without asking when it is bound to another PC |
+| `--seconds N` | Keep the session open N seconds instead of waiting for Enter |
+| `--trial` | Also create a free trial key for this computer |
+| `--accounts` | Also create a throwaway user account |
+
+`--trial` and `--accounts` are off by default because they create data in your
+application. `PWFAUTH_BASE_URL` points the demo at another server, such as a
+staging copy.
+
+Exit codes: `0` done, `1` no secret or key, `2` sign-in refused, `3` no connection
+or not the license server, `4` the kill switch ended the session.
 
 ## Features demonstrated
 
-| # | Feature | Endpoint | Wire format |
-| --- | --- | --- | --- |
-| 0 | App info + update check | `GET /api/app/info.php` | encrypted reply |
-| 1 | Check a license key | `POST /api/auth/check-key.php` | plain |
-| 2 | Login (bind HWID, open session) | `POST /api/auth/login.php` | **encrypted** |
-| 3 | Heartbeat (keep alive / kill code) | `POST /api/auth/heartbeat.php` | **encrypted** |
-| 4 | Logout | `POST /api/auth/logout.php` | **encrypted** |
-| 5 | Start a free trial | `POST /api/auth/trial.php` | plain |
-| 6 | Request an HWID reset | `POST /api/auth/request-hwid-reset.php` | plain |
-| 7 | Register / login / change-password | `POST /api/auth/account-*.php` | plain |
+| # | Feature | Package call |
+| --- | --- | --- |
+| 0 | App info: name, version, social links | `get_app_info()` |
+| 1 | Check a key without using a device seat | `check_key()` |
+| 2 | Sign in: bind this PC, open a session | `login()` |
+| 2 | Move the license here when it is bound elsewhere | `reset_hardware_id()` |
+| 3 | Update check, remote texts, slides | `check_update()`, `get_texts()`, `get_slides()` |
+| 4 | The heartbeat and its kill switch | `start_heartbeat()`, `on_session_ended` |
+| 5 | Sign out | `logout()` |
+| 6 | Free trial (`--trial`) | `create_trial()` |
+| 7 | User accounts (`--accounts`) | `register_account()`, `account_login()`, `change_account_password()` |
 
-## Use as a library
+During section 4, ban, pause or reset the key in your dashboard: the demo stops
+on the next beat, the way a real app should. The callback runs on the heartbeat
+thread, so it stops the program with `os._exit()`; `sys.exit()` would only end that
+thread.
+
+## Use the package in your app
 
 ```python
-from pwfauth_client import PwfAuthClient, hwid
+import os, sys
+from pwfauth import PwfClient
 
-client = PwfAuthClient("your_app_secret")           # or PwfAuthClient(secret, base_url=...)
+client = PwfClient(os.environ["PWFAUTH_SECRET"])
 
-info = client.get_app_info()
-print(info["_flat"]["name"], info["_flat"]["version"])
+def on_session_ended(code, msg):   # kill switch: banned, paused, expired, reset...
+    print(f"Session ended ({code}): {msg}", file=sys.stderr)
+    os._exit(1)   # runs on the heartbeat thread, where sys.exit() would only end that thread
 
-result = client.login("PWF-XXXX-XXXX-XXXX", hwid())
-if result.get("success"):
-    session_id = result["session_id"]
-    client.heartbeat(session_id, "PWF-XXXX-XXXX-XXXX")
-    client.logout(session_id, "PWF-XXXX-XXXX-XXXX")
+client.on_session_ended = on_session_ended
+
+login = client.login("PWF-XXXX-XXXX-XXXX")
+if not login.success:
+    sys.exit(login.message)
+
+client.start_heartbeat()   # keeps the session alive AND enforces the kill switch
 ```
 
-Every method returns the parsed JSON `dict`, plus a `_flat` key that pulls
-top-level and one nested level of scalar fields together for convenience.
+The package also:
 
-## How the envelope works
+- corrects a wrong PC clock by itself, and moving the clock does not dodge the kill
+  switch;
+- refuses a reply that claims success without encryption (`PwfSecurityError`): it
+  came from a proxy, a hosts-file entry or a fake server.
 
-`login` / `heartbeat` / `logout` send an encrypted `{p, t, s}` envelope and the
-server replies with one (`app/info` also returns one); the rest is plain JSON.
-
-- `enc_key = SHA256("enc:" + app_secret)`, `mac_key = SHA256("mac:" + app_secret)`
-- `p = base64(IV(16) || AES-256-CBC(inner_json))`
-- `t = unix_seconds`, `s = hex(HMAC-SHA256(p + t, mac_key))`, 300 s drift window
-
-See [`pwfauth_client.py`](pwfauth_client.py) — `CryptoEnvelope`.
+Full reference: [pwfauth.com/docs](https://pwfauth.com/docs).
 
 ## Files
 
 | File | Role |
 | --- | --- |
-| `pwfauth_client.py` | The client — `CryptoEnvelope`, `hwid()`, and `PwfAuthClient` (one method per endpoint) |
-| `demo.py` | A guided run through every endpoint |
-| `test_envelope.py` | An offline round-trip test of the envelope (no network) |
+| `demo.py` | The guided tour, one function per section |
+| `test_demo.py` | An offline test: a fake server's plain "success" must be refused |
+
+## Upgrading from version 1
+
+Version 1 of this repository was a hand-written client, `pwfauth_client.py`, built
+on pycryptodome. It did not refuse a fake server's plain "success" and had no
+heartbeat loop, so a ban never stopped the app. It is replaced by the official
+package, which does both. The old code stays available at the
+[`v1.0.0`](https://github.com/pwfauth/pwfauth-python-client/tree/v1.0.0) tag.
 
 ## Security note
 
 An app secret shipped in a client can be extracted — treat client-side license
 checks as a **deterrent, not DRM**. Keep the secret out of source control; the
-demo reads it from the `PWF_APP_SECRET` environment variable.
+demo reads it from the `PWFAUTH_SECRET` environment variable.
 
 ## License
 
