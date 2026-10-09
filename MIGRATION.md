@@ -43,4 +43,4 @@ patching an executable/source they control; enforce valuable operations server-s
 ## Package availability for this sample
 
 The requirements file uses the official GitHub wheel with a pinned SHA-256 hash.
-The sample can be installed while publication to package registries is pending.
+Python pwfauth 1.2.0 is also available on PyPI; the hash-pinned GitHub installation remains supported.
