@@ -1,7 +1,9 @@
 # pwfauth-python-client
 
+This revision requires the new signed-response SDK (PWFAuth 1.4.0 / Python pwfauth 1.2.0 as applicable). The requirements file installs the published GitHub wheel, pinned by version and SHA-256; PyPI publication is pending. It rejects unsigned or forged replies and fixes the production endpoint.
+
 A guided **console tour** of the official
-[`pwfauth` Python package](https://pypi.org/project/pwfauth/) (version 1.1.0) for
+[`pwfauth` Python package](https://pypi.org/project/pwfauth/) (version 1.2.0) for
 [PWF Auth](https://pwfauth.com): license keys, the heartbeat and its kill switch,
 moving a license to a new PC, update checks, trials and user accounts. One
 numbered section per feature, with coloured results.
@@ -23,13 +25,9 @@ Requires Python 3.9+.
 
 ## Run the demo
 
-```bash
-# Linux/macOS
-export PWFAUTH_SECRET="your_app_secret"
-python demo.py PWF-XXXX-XXXX-XXXX
+Configure `DEFAULT_APP_SECRET` in `demo.py` before distribution. Never commit the real secret.
 
-# Windows
-setx PWFAUTH_SECRET "your_app_secret"
+```bash
 python demo.py PWF-XXXX-XXXX-XXXX
 ```
 
@@ -43,8 +41,7 @@ Run with no argument to be prompted for the key. Options:
 | `--accounts` | Also create a throwaway user account |
 
 `--trial` and `--accounts` are off by default because they create data in your
-application. `PWFAUTH_BASE_URL` points the demo at another server, such as a
-staging copy.
+application. The server is fixed to `https://pwfauth.com`; environment overrides are ignored.
 
 Exit codes: `0` done, `1` no secret or key, `2` sign-in refused, `3` no connection
 or not the license server, `4` the kill switch ended the session.
@@ -117,7 +114,7 @@ package, which does both. The old code stays available at the
 
 An app secret shipped in a client can be extracted — treat client-side license
 checks as a **deterrent, not DRM**. Keep the secret out of source control; the
-demo reads it from the `PWFAUTH_SECRET` environment variable.
+demo uses the developer-configured `DEFAULT_APP_SECRET`.
 
 ## License
 

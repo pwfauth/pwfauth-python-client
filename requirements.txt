@@ -1,2 +1,2 @@
 # The official PWF Auth package (https://pypi.org/project/pwfauth/).
-pwfauth==1.1.0
+pwfauth @ https://github.com/pwfauth/pwfauth-python/releases/download/v1.2.0/pwfauth-1.2.0-py3-none-any.whl#sha256=9c7526b2e7af4a38944b6af1220e06da22fcfe82c8f61e6a0766e7fb0d5bb2d8

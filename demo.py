@@ -3,7 +3,7 @@ PWF Auth — a guided console tour of the official `pwfauth` package.
 
 Run:
     pip install -r requirements.txt
-    setx PWFAUTH_SECRET "your_app_secret"     # once (Windows) — get it from the dashboard
+    Configure DEFAULT_APP_SECRET below before running.
     python demo.py PWF-XXXX-XXXX-XXXX          # or run with no argument to be prompted
 
 Each numbered section calls one feature and prints a coloured result:
@@ -26,7 +26,7 @@ from pwfauth import (PwfClient, PwfError, PwfErrorCodes, PwfHttpError, PwfSecuri
                      __version__ as PWFAUTH_VERSION)
 
 # Get your App Secret from the dashboard: Applications -> your app -> API key.
-# NEVER commit your real secret. Prefer the PWFAUTH_SECRET environment variable.
+# Configure this before building. Do not commit your real app secret.
 DEFAULT_APP_SECRET = ""
 DEFAULT_BASE_URL = "https://pwfauth.com"
 APP_VERSION = "1.0.0"  # this app's version, for the update check
@@ -246,13 +246,11 @@ def main():
     if os.name == "nt":
         os.system("")  # enable ANSI colours in the Windows console
 
-    app_secret = (os.environ.get("PWFAUTH_SECRET") or os.environ.get("PWF_APP_SECRET")
-                  or DEFAULT_APP_SECRET).strip()
+    app_secret = DEFAULT_APP_SECRET.strip()
     if not app_secret:
-        print("!  Set PWFAUTH_SECRET (or DEFAULT_APP_SECRET in demo.py) first.")
+        print("!  Set DEFAULT_APP_SECRET in demo.py first.")
         return 1
-    base_url = (os.environ.get("PWFAUTH_BASE_URL") or os.environ.get("PWF_BASE_URL")
-                or DEFAULT_BASE_URL).strip()
+    base_url = DEFAULT_BASE_URL
 
     license_key = args.license_key or input("Enter license key: ").strip()
     if not license_key:
