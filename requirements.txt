@@ -1,2 +1,3 @@
-# The official PWF Auth package (https://pypi.org/project/pwfauth/).
-pwfauth @ https://github.com/pwfauth/pwfauth-python/releases/download/v1.2.0/pwfauth-1.2.0-py3-none-any.whl#sha256=9c7526b2e7af4a38944b6af1220e06da22fcfe82c8f61e6a0766e7fb0d5bb2d8
+# The official PWF Auth package 1.5.0 (https://pypi.org/project/pwfauth/1.5.0/),
+# the PyPI wheel pinned by its SHA-256.
+pwfauth @ https://files.pythonhosted.org/packages/85/f3/e6930d0122daf6d21b75d3ab30a91c169ce26f7776909f1cd48317c04695/pwfauth-1.5.0-py3-none-any.whl#sha256=42605b5c4a118e71f9029978a379179bf399eaf7f4aa7b7a700eb4a4e51424b5

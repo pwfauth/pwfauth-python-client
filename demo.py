@@ -9,10 +9,11 @@ Run:
 Each numbered section calls one feature and prints a coloured result:
     0) app info   1) check key   2) sign in (and move the license here)
     3) update check, remote texts and slides
-    4) live session: the heartbeat and the kill switch   5) sign out
+    4) user variables: values kept on the server for this key
+    5) live session: the heartbeat and the kill switch   6) sign out
 Optional, because they create data in your application:
-    --trial      6) a free trial key for this computer
-    --accounts   7) a throwaway user account: register, sign in, change password
+    --trial      7) a free trial key for this computer
+    --accounts   8) a throwaway user account: register, sign in, change password
 
 https://pwfauth.com   ·   docs: https://pwfauth.com/docs
 """
@@ -22,8 +23,8 @@ import sys
 import threading
 import time
 
-from pwfauth import (PwfClient, PwfError, PwfErrorCodes, PwfHttpError, PwfSecurityError,
-                     __version__ as PWFAUTH_VERSION)
+from pwfauth import (PwfClient, PwfError, PwfErrorCodes, PwfHttpError, PwfRefusedError,
+                     PwfSecurityError, __version__ as PWFAUTH_VERSION)
 
 # Get your App Secret from the dashboard: Applications -> your app -> API key.
 # Configure this before building. Do not commit your real app secret.
@@ -157,9 +158,31 @@ def app_content(client):
         fail("Slides", slides.message, slides.error_code)
 
 
+def user_variables(client):
+    # 4) USER VARIABLES — small values kept on the server for this key: settings, progress,
+    # flags. They follow the key to a new PC, and you see and edit them in your panel
+    # (Licences -> the key -> Variables). The demo counts its own runs.
+    section("4) User variables")
+    try:
+        try:
+            runs = int(client.get_variable("demo_runs") or 0) + 1
+        except ValueError:  # someone typed text into it in the panel
+            runs = 1
+        client.set_variable("demo_runs", str(runs))
+        client.set_variable("demo_last_run", time.strftime("%Y-%m-%d %H:%M:%S"))
+    except PwfRefusedError as ex:
+        fail("User variables", str(ex), ex.error_code)
+        return None
+    ok(f"This key has run the demo {runs} time{'' if runs == 1 else 's'} (kept on the server as demo_runs)")
+    for name, value in sorted(client.get_variables().items()):
+        detail(name, value)
+    detail("Try it", "open this key in your panel: Licences -> the key -> Variables")
+    return runs
+
+
 def live_session(client, seconds):
-    # 4) HEARTBEAT — keeps the session alive AND enforces the kill switch.
-    section("4) Live session")
+    # 5) HEARTBEAT — keeps the session alive AND enforces the kill switch.
+    section("5) Live session")
 
     def on_session_ended(error_code, message):
         # Runs on the heartbeat thread: banned, paused, expired, reset, revoked,
@@ -185,8 +208,8 @@ def live_session(client, seconds):
 
 
 def sign_out(client):
-    # 5) SIGN OUT — ends the session on the server. The key stays bound here.
-    section("5) Sign out")
+    # 6) SIGN OUT — ends the session on the server. The key stays bound here.
+    section("6) Sign out")
     lo = client.logout()
     if lo is not None and lo.success:
         ok("Signed out")
@@ -195,8 +218,8 @@ def sign_out(client):
 
 
 def trial(client):
-    # 6) TRIAL — a free trial key for this computer (when the app allows trials).
-    section("6) Free trial")
+    # 7) TRIAL — a free trial key for this computer (when the app allows trials).
+    section("7) Free trial")
     tr = client.create_trial()
     if tr.success:
         ok(f"Trial key: {tr.data.get('trial_key')}  (expires {tr.data.get('expires_at')})")
@@ -205,8 +228,8 @@ def trial(client):
 
 
 def accounts(client):
-    # 7) USER ACCOUNTS — register, sign in, change the password.
-    section("7) User accounts")
+    # 8) USER ACCOUNTS — register, sign in, change the password.
+    section("8) User accounts")
     user = f"demo_{int(time.time())}"
     pass1, pass2 = "DemoPass!123456", "DemoPass!654321"
     print(f"     (creates a throwaway account: {user})")
@@ -266,6 +289,7 @@ def main():
         signed_in = sign_in(client, license_key, args.move)
         if signed_in:
             app_content(client)
+            user_variables(client)
             live_session(client, args.seconds)
             sign_out(client)
         if args.trial:

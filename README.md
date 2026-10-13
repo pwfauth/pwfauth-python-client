@@ -1,11 +1,11 @@
 # pwfauth-python-client
 
-This revision requires the new signed-response SDK (PWFAuth 1.4.0 / Python pwfauth 1.2.0 as applicable). The requirements file installs the published GitHub wheel, pinned by version and SHA-256; the same version is also available on PyPI. It rejects unsigned or forged replies and fixes the production endpoint.
+This revision uses `pwfauth` **1.5.0**. The requirements file installs the PyPI wheel, pinned by version and SHA-256. Versions before 1.3.0 cannot talk to the current server (it signs its replies with a new key), so update older copies.
 
 A guided **console tour** of the official
-[`pwfauth` Python package](https://pypi.org/project/pwfauth/) (version 1.2.0) for
+[`pwfauth` Python package](https://pypi.org/project/pwfauth/) (version 1.5.0) for
 [PWF Auth](https://pwfauth.com): license keys, the heartbeat and its kill switch,
-moving a license to a new PC, update checks, trials and user accounts. One
+moving a license to a new PC, update checks, user variables, trials and user accounts. One
 numbered section per feature, with coloured results.
 
 > Sibling projects:
@@ -55,12 +55,18 @@ or not the license server, `4` the kill switch ended the session.
 | 2 | Sign in: bind this PC, open a session | `login()` |
 | 2 | Move the license here when it is bound elsewhere | `reset_hardware_id()` |
 | 3 | Update check, remote texts, slides | `check_update()`, `get_texts()`, `get_slides()` |
-| 4 | The heartbeat and its kill switch | `start_heartbeat()`, `on_session_ended` |
-| 5 | Sign out | `logout()` |
-| 6 | Free trial (`--trial`) | `create_trial()` |
-| 7 | User accounts (`--accounts`) | `register_account()`, `account_login()`, `change_account_password()` |
+| 4 | User variables: values kept on the server for this key | `get_variable()`, `set_variable()`, `get_variables()` |
+| 5 | The heartbeat and its kill switch | `start_heartbeat()`, `on_session_ended` |
+| 6 | Sign out | `logout()` |
+| 7 | Free trial (`--trial`) | `create_trial()` |
+| 8 | User accounts (`--accounts`) | `register_account()`, `account_login()`, `change_account_password()` |
 
-During section 4, ban, pause or reset the key in your dashboard: the demo stops
+Section 4 counts how often the key ran the demo, in a user variable called
+`demo_runs`, and lists every variable of the key. Open the key in your panel
+(**Licences → the key → Variables**): the count is there, and a value you change
+there is what the demo reads next time. Variables follow the key to a new PC.
+
+During section 5, ban, pause or reset the key in your dashboard: the demo stops
 on the next beat, the way a real app should. The callback runs on the heartbeat
 thread, so it stops the program with `os._exit()`; `sys.exit()` would only end that
 thread.
@@ -84,6 +90,10 @@ if not login.success:
     sys.exit(login.message)
 
 client.start_heartbeat()   # keeps the session alive AND enforces the kill switch
+
+# values kept on the server for this key, editable in your panel
+client.set_variable("theme", "dark")
+theme = client.get_variable("theme")   # None when never set
 ```
 
 The package also:
@@ -100,7 +110,7 @@ Full reference: [pwfauth.com/docs](https://pwfauth.com/docs).
 | File | Role |
 | --- | --- |
 | `demo.py` | The guided tour, one function per section |
-| `test_demo.py` | An offline test: a fake server's plain "success" must be refused |
+| `test_demo.py` | Offline tests: the fixed configuration, and the user-variables section against a stand-in client |
 
 ## Upgrading from version 1
 

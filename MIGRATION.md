@@ -30,7 +30,7 @@ and application data are not migrated. Existing users do not need replacement ke
 ## Upgrade checklist
 
 1. Preserve a backup/commit of your application's custom changes and dependency lockfile.
-2. Upgrade Python/Node pwfauth to 1.2.0 or NuGet PWFAuth to 1.4.0.
+2. Upgrade Python pwfauth to 1.5.0 (versions before 1.3.0 cannot talk to the current server).
 3. Remove alternate server URLs; review custom transports and exception handling.
 4. Test a valid license, invalid license, heartbeat/logout, and offline behavior.
 5. Confirm that a security/transport exception never unlocks protected features.
@@ -42,5 +42,5 @@ patching an executable/source they control; enforce valuable operations server-s
 
 ## Package availability for this sample
 
-The requirements file uses the official GitHub wheel with a pinned SHA-256 hash.
-Python pwfauth 1.2.0 is also available on PyPI; the hash-pinned GitHub installation remains supported.
+The requirements file installs the official pwfauth 1.5.0 wheel from PyPI,
+pinned by its SHA-256 hash.
